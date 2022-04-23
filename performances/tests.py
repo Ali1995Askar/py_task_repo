@@ -59,6 +59,11 @@ class TestHourlyPerformanceModel(TestCase):
                          self.test_revenue_value - self.test_cost_value)
 
     def test_filter_by_min_roi_method(self):
+        """
+            Because task ask to save profit value i used calculated field and overwrite save method to calculate the result
+            that the reason i didn't use property so i can't use bulk_create method to create objects as you know 
+            bulk_create will not call save() method or send post_save or pre_save() signals
+        """
         for idx in range(1, self.number_records):
             models.DailyPerformance.objects.create(
                 cost=idx,
