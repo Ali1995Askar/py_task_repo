@@ -8,17 +8,17 @@
 5- cd to root folder then run migrate command 'python manage.py migrate' <br />
 6- start Broker and set broker url in .env file with CELERY_BROKER_URL name <br />
 7- start celery using command 'celery --app=config worker --loglevel=info --logfile=logs/celery.log' <br />
-8- run scripts using 'python manage.py runscript **name_of_scripy**' <br />
+8- run scripts using 'python manage.py runscript **name_of_script**' <br />
 9- run tests using 'python manage.py test' to test the behavior <br /> <br />
 
 **Notes** <br />
-1- slow_iteration scripy take argument to change the 50 records number using command 
+1- slow_iteration script takes argument to change the 50 records number using command 
 'python manage.py runscript slow_iteration --script-args num 50'
 the default num value is 50. <br />
 
-2- when you run django and celery project will create logs folder at the root
-contains django.log file and celery.log file fot write logs of servers
-follow the logs using 'tail -f path_to_your_project/logs/name_of_log_file.log' <br />
+2- when you run django and celery project project will create logs folder at the root
+contains django.log file and celery.log file to write logs of servers
+to follow the logs you can use 'tail -f path_to_your_project/logs/name_of_log_file.log' <br />
 
 3- I used django_extensions for script running I think we can add command by extend base command
 to add new command to manage.py and use it to run scripts. <br />
