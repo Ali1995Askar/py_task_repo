@@ -60,72 +60,69 @@ class TestHourlyPerformanceModel(TestCase):
 
     def test_filter_by_min_roi_method(self):
         """
-            Because task ask to save profit value i used calculated field and overwrite save method to calculate the result
-            that the reason i didn't use property so i can't use bulk_create method to create objects as you know 
-            bulk_create will not call save() method or send post_save or pre_save() signals
+                Because task ask to save profit value after calculate, 
+                i used calculated field and overwrite save method to calculate the result of profit that the reason i didn't use property 
+                so i can't use bulk_create method to create objects as you know 
+                bulk_create will not call save() method or send post_save or pre_save() signals
+
+                so i did calculate for profit field by my hand to use create_bulk method
         """
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=idx,
-                revenue=idx,
-                date=self.test_date_value
-            )
 
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=idx,
-                revenue=idx + 1000,
-                date=self.test_date_value
-            )
+        objects = [models.DailyPerformance(cost=idx,
+                                           revenue=idx,
+                                           profit=0,
+                                           date=self.test_date_value) for idx in range(1, self.number_records)]
 
-        models.DailyPerformance.objects.create(
-            cost=100,
-            revenue=151,
-            date=self.test_date_value
-        )
+        objects += [models.DailyPerformance(cost=idx,
+                                            revenue=idx + 1000,
+                                            profit=1000,
+                                            date=self.test_date_value) for idx in range(1, self.number_records)]
 
-        models.DailyPerformance.objects.create(
-            cost=100,
-            revenue=150,
-            date=self.test_date_value
-        )
+        objects += [
+            models.DailyPerformance(cost=100, revenue=151, profit=51, date=self.test_date_value)]
+
+        objects += [
+            models.DailyPerformance(cost=100, revenue=150, profit=50, date=self.test_date_value)]
+
+        models.DailyPerformance.objects.bulk_create(objects)
+
         self.assertEqual(100,
                          models.DailyPerformance.objects.filter_by_min_roi(
                              self.min_roi).count())
 
     def test_slow_iteration_task_query(self):
+        objects = [models.DailyPerformance(cost=0,
+                                           revenue=idx,
+                                           profit=idx,
+                                           date=self.test_date_value) for idx in range(1, self.number_records)
+                   ]
 
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=0,
-                revenue=idx,
-                date=self.test_date_value
-            )
+        objects += [
+            models.DailyPerformance(cost=idx,
+                                    revenue=idx,
+                                    profit=0,
+                                    date=self.test_date_value) for idx in range(1, self.number_records)
+        ]
 
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=idx,
-                revenue=idx,
-                date=self.test_date_value
-            )
+        objects += [models.DailyPerformance(cost=idx,
+                                            revenue=1000 + idx,
+                                            profit=1000,
+                                            date=self.test_date_value) for idx in range(1, self.number_records)
+                    ]
 
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=idx,
-                revenue=1000 + idx,
-                date=self.test_date_value
-            )
+        objects += [
+            models.DailyPerformance(cost=idx,
+                                    revenue=2 * idx + 1,
+                                    profit=2 * idx + 1 - idx,
+                                    date=self.test_date_value) for idx in range(1, self.number_records)
+        ]
 
-        for idx in range(1, self.number_records):
-            models.DailyPerformance.objects.create(
-                cost=idx,
-                revenue=2 * idx + 1,
-                date=self.test_date_value
-            )
+        models.DailyPerformance.objects.bulk_create(objects)
 
         self.assertEqual(198,
                          models.DailyPerformance.objects.filter(
-                             (~Q(cost=0)) & (Q(revenue__gt=2 * F('cost')) | Q(revenue__gt=1000))
+                             (~Q(cost=0)) & (
+                                 Q(revenue__gt=2 * F('cost')) | Q(revenue__gt=1000))
                          ).count())
 
     def test_set_revenue_multiplied_by_random_number(self):
@@ -143,8 +140,10 @@ class TestHourlyPerformanceModel(TestCase):
         daily_revenue.save(update_fields=['revenue', 'profit'])
         daily_revenue.refresh_from_db()
 
-        self.assertAlmostEqual(daily_revenue.revenue, self.random_value * old_revenue, 4)
-        self.assertEqual(daily_revenue.profit, daily_revenue.revenue - daily_revenue.cost)
+        self.assertAlmostEqual(daily_revenue.revenue,
+                               self.random_value * old_revenue, 4)
+        self.assertEqual(daily_revenue.profit,
+                         daily_revenue.revenue - daily_revenue.cost)
 
     @mock.patch("scripts.slow_iteration.tasks.daily_performance_task.delay")
     def test_daily_performance_task_running(self, mocked_task: mock.Mock):
